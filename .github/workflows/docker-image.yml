@@ -1,0 +1,57 @@
+name: ci
+on:
+  push:
+    branches:
+      - "main"
+jobs:
+  build:
+    name: Build and Push
+    if: "!contains(github.event.head_commit.message, 'ci skip')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: print-stuff
+        run: |
+          env
+          pwd
+          ls -lahrt
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        env:
+          SHORT_SHA: ${GITHUB_SHA:0:7}
+        with:
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+      - name: Checkout k8s repo
+        uses: actions/checkout@v2
+        with:
+          repository: jaredmcqueen/k8s-deployments
+          persist-credentials: false # otherwise, the token used is the GITHUB_TOKEN, instead of your personal token
+          fetch-depth: 0 # otherwise, you will failed to push refs to dest repo
+      - name: modify app version
+        run: |
+          env
+          pwd
+          ls -lahrt
+          ls *
+          sed -E -i'' "s/(.*brownbag-k8s:).*/\1${GITHUB_SHA}/" 'brownbag-k8s/brownbag-k8s-deployment.yaml'
+          cat brownbag-k8s/brownbag-k8s-deployment.yaml
+      - name: Commit files
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git commit -m "Add changes" -a
+      - name: Push changes
+        uses: ad-m/github-push-action@master
+        with:
+          repository: jaredmcqueen/k8s-deployments
+          github_token: ${{ secrets.API_TOKEN_GITHUB }}
+          branch: ${{ github.ref }}

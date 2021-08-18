@@ -42,8 +42,7 @@ jobs:
           pwd
           ls -lahrt
           ls *
-          sed -E -i'' "s/(.*brownbag-k8s:).*/\1${GITHUB_SHA}/" 'brownbag-k8s/brownbag-k8s-deployment.yaml'
-          cat brownbag-k8s/brownbag-k8s-deployment.yaml
+          sed -E -i'' "s/(.*brownbag-k8s:).*/\1${GITHUB_SHA}/" 'brownbag-k8s/brownbag-k8s-rollout.yaml'
       - name: Commit files
         run: |
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
